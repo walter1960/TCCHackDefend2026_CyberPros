@@ -1,7 +1,7 @@
 import { prisma } from "./prisma";
 import { scoreCV } from "./gemini";
 
-import pdfParse from "pdf-parse";
+const pdfParse = require("pdf-parse");
 
 export async function scanEmailsForJob(jobId: string, userId: string) {
   // 1. Get user's account to find the access token
