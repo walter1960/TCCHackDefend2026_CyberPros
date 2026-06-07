@@ -1,12 +1,7 @@
 import { prisma } from "./prisma";
 import { scoreCV } from "./gemini";
 
-let pdfParse: any = null;
-try {
-  pdfParse = require("pdf-parse");
-} catch (e) {
-  console.warn("pdf-parse non disponible");
-}
+import pdfParse from "pdf-parse";
 
 export async function scanEmailsForJob(jobId: string, userId: string) {
   // 1. Get user's account to find the access token
@@ -160,17 +155,15 @@ async function scanOutlook(accessToken: string, job: any) {
 }
 
 async function processPdfBuffer(buffer: Buffer, filename: string, job: any) {
-  let cvText = "Texte du CV illisible ou pdf-parse non disponible.";
-  if (pdfParse) {
-    try {
-      const data = await pdfParse(buffer);
-      cvText = data.text;
-    } catch(e) {
-      console.error("PDF Parse error", e);
-    }
+  let cvText = "";
+  try {
+    const data = await pdfParse(buffer);
+    cvText = data.text || "";
+  } catch(e) {
+    console.error(`PDF Parse error for ${filename}`, e);
   }
 
-  if (cvText.trim().length > 50) {
+  if (cvText.trim().length > 20) {
     const aiResult = await scoreCV(cvText, job.criteria);
     
     await prisma.candidate.create({
@@ -185,6 +178,8 @@ async function processPdfBuffer(buffer: Buffer, filename: string, job: any) {
         status: "PENDING"
       }
     });
+  } else {
+    console.log(`Skipped ${filename} because extracted text was too short (length: ${cvText.trim().length})`);
   }
 }
 
