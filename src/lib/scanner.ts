@@ -56,7 +56,7 @@ async function getValidGoogleToken(account: any) {
   const tokens = await response.json();
 
   if (!response.ok) {
-    throw new Error(`Erreur lors du rafraîchissement du token: ${JSON.stringify(tokens)}`);
+    throw new Error("SESSION_EXPIRED: Votre session e-mail a expiré ou le token a été révoqué. Veuillez vous reconnecter.");
   }
 
   const newExpiresAt = Math.floor(Date.now() / 1000) + tokens.expires_in;

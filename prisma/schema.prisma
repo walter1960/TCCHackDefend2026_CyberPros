@@ -82,6 +82,7 @@ model Candidate {
   status         String   @default("PENDING") 
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
+  notes          String?
 
   job            Job      @relation(fields: [jobId], references: [id], onDelete: Cascade)
 }

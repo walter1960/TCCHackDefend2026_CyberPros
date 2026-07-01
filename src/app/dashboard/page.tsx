@@ -1,15 +1,21 @@
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
+import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import Link from "next/link";
-import { FileText, Users, ArrowRight, Plus, Briefcase } from "lucide-react";
+import { Plus, Briefcase, FileText, Users, ArrowRight, BarChart } from "lucide-react";
 
 export default async function DashboardPage() {
   const session = await getServerSession(authOptions);
   
+  if (!session) {
+    redirect("/login");
+  }
+  
   const jobs = await prisma.job.findMany({
     where: { userId: (session?.user as any)?.id },
     include: {
+      candidates: true,
       _count: {
         select: { candidates: true }
       }
@@ -19,6 +25,11 @@ export default async function DashboardPage() {
 
   const activeJobs = jobs.filter(job => job.status === "ACTIVE" && (!job.deadline || new Date(job.deadline) >= new Date()));
   const archivedJobs = jobs.filter(job => job.status === "ARCHIVED" || (job.deadline && new Date(job.deadline) < new Date()));
+
+  // Calculate analytics
+  const totalCVs = jobs.reduce((acc, job) => acc + job._count.candidates, 0);
+  const selectedCVs = jobs.reduce((acc, job) => acc + job.candidates.filter(c => c.status === "SELECTED").length, 0);
+  const averageSelectionRate = totalCVs > 0 ? Math.round((selectedCVs / totalCVs) * 100) : 0;
 
   return (
     <div className="space-y-12">
@@ -30,11 +41,44 @@ export default async function DashboardPage() {
         
         <Link 
           href="/dashboard/job/new"
-          className="flex items-center justify-center gap-2 rounded-lg bg-indigo-600 px-4 py-3 text-sm font-medium text-white transition-all hover:bg-indigo-500"
+          className="flex items-center justify-center gap-2 rounded-lg bg-indigo-600 px-4 py-3 text-sm font-medium text-white transition-all hover:bg-indigo-500 shadow-lg shadow-indigo-500/20"
         >
           <Plus className="h-5 w-5" />
           Nouvelle offre
         </Link>
+      </div>
+
+      {/* Analytics Section */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+        <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 flex items-center gap-4">
+          <div className="bg-blue-500/10 p-4 rounded-xl border border-blue-500/20">
+            <Briefcase className="h-6 w-6 text-blue-400" />
+          </div>
+          <div>
+            <p className="text-sm font-medium text-slate-400">Total des offres</p>
+            <p className="text-2xl font-bold text-white">{jobs.length}</p>
+          </div>
+        </div>
+        
+        <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 flex items-center gap-4">
+          <div className="bg-indigo-500/10 p-4 rounded-xl border border-indigo-500/20">
+            <FileText className="h-6 w-6 text-indigo-400" />
+          </div>
+          <div>
+            <p className="text-sm font-medium text-slate-400">CV Analysés</p>
+            <p className="text-2xl font-bold text-white">{totalCVs}</p>
+          </div>
+        </div>
+
+        <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 flex items-center gap-4">
+          <div className="bg-green-500/10 p-4 rounded-xl border border-green-500/20">
+            <BarChart className="h-6 w-6 text-green-400" />
+          </div>
+          <div>
+            <p className="text-sm font-medium text-slate-400">Taux de sélection</p>
+            <p className="text-2xl font-bold text-white">{averageSelectionRate}%</p>
+          </div>
+        </div>
       </div>
 
       {/* Active Jobs Section */}

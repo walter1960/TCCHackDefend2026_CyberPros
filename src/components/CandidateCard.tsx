@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Mail, Phone, FileText, ChevronDown, ChevronUp, Loader2, MessageSquare } from "lucide-react";
+import { Mail, Phone, FileText, ChevronDown, ChevronUp, Loader2, MessageSquare, Check, X, Save } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
 export default function CandidateCard({ candidate, jobId }: { candidate: any, jobId: string }) {
@@ -10,6 +10,29 @@ export default function CandidateCard({ candidate, jobId }: { candidate: any, jo
     candidate.interviewGuide ? JSON.parse(candidate.interviewGuide) : null
   );
   const [showGuide, setShowGuide] = useState(false);
+  const [notes, setNotes] = useState(candidate.notes || "");
+  const [isSavingNotes, setIsSavingNotes] = useState(false);
+  const [notesSaved, setNotesSaved] = useState(false);
+
+  const handleSaveNotes = async () => {
+    setIsSavingNotes(true);
+    setNotesSaved(false);
+    try {
+      const res = await fetch(`/api/job/${jobId}/candidate/${candidate.id}/notes`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ notes })
+      });
+      if (res.ok) {
+        setNotesSaved(true);
+        setTimeout(() => setNotesSaved(false), 2000);
+      }
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setIsSavingNotes(false);
+    }
+  };
 
   const handleGenerateInterview = async () => {
     if (interviewGuide) {
@@ -63,6 +86,23 @@ export default function CandidateCard({ candidate, jobId }: { candidate: any, jo
               </a>
             )}
           </div>
+
+          {candidate.email && (
+            <div className="flex flex-wrap gap-3 mb-4">
+              <a
+                href={`mailto:${candidate.email}?subject=${encodeURIComponent("Suite à votre candidature")}&body=${encodeURIComponent(`Bonjour ${candidate.name || ""},\n\nSuite à votre candidature pour le poste, nous avons le plaisir de vous informer que votre profil a retenu notre attention.\n\nSeriez-vous disponible pour un premier échange prochainement ?\n\nCordialement,`)}`}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-green-500/10 text-green-400 hover:bg-green-500/20 text-xs font-medium border border-green-500/20 transition-all"
+              >
+                <Check className="h-3.5 w-3.5" /> Proposer un entretien
+              </a>
+              <a
+                href={`mailto:${candidate.email}?subject=${encodeURIComponent("Votre candidature")}&body=${encodeURIComponent(`Bonjour ${candidate.name || ""},\n\nNous vous remercions pour l'intérêt que vous portez à notre entreprise.\n\nMalgré la qualité de votre profil, nous avons décidé de ne pas donner une suite favorable à votre candidature pour le moment, d'autres profils correspondant davantage à nos critères actuels.\n\nNous vous souhaitons une excellente continuation.\n\nCordialement,`)}`}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-red-500/10 text-red-400 hover:bg-red-500/20 text-xs font-medium border border-red-500/20 transition-all"
+              >
+                <X className="h-3.5 w-3.5" /> Refuser
+              </a>
+            </div>
+          )}
 
           <div className="bg-slate-950 rounded-xl p-4 border border-slate-800 mt-4">
             <h4 className="text-xs font-semibold text-indigo-400 uppercase tracking-wider mb-2">Avis de l'IA</h4>
@@ -155,6 +195,25 @@ export default function CandidateCard({ candidate, jobId }: { candidate: any, jo
                   Erreur lors de la génération. Veuillez réessayer.
                 </div>
               )}
+              <div className="mt-6 border-t border-slate-800 pt-6">
+                <div className="flex items-center justify-between mb-3">
+                  <h5 className="text-xs font-semibold text-indigo-400 uppercase tracking-wider">Notes du Recruteur</h5>
+                  <button 
+                    onClick={handleSaveNotes}
+                    disabled={isSavingNotes}
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-indigo-600/10 text-indigo-400 hover:bg-indigo-600/20 text-xs font-medium border border-indigo-500/20 transition-all disabled:opacity-50"
+                  >
+                    {isSavingNotes ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : (notesSaved ? <Check className="h-3.5 w-3.5" /> : <Save className="h-3.5 w-3.5" />)}
+                    {notesSaved ? "Enregistré" : "Enregistrer les notes"}
+                  </button>
+                </div>
+                <textarea 
+                  value={notes}
+                  onChange={(e) => setNotes(e.target.value)}
+                  placeholder="Prenez des notes pendant l'entretien ici..."
+                  className="w-full h-32 bg-slate-900 border border-slate-800 rounded-xl p-3 text-sm text-slate-300 placeholder:text-slate-600 focus:outline-none focus:border-indigo-500/50 focus:ring-1 focus:ring-indigo-500/50 resize-none transition-all"
+                />
+              </div>
             </div>
           </motion.div>
         )}

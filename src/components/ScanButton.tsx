@@ -42,7 +42,21 @@ export default function ScanButton({ jobId }: { jobId: string }) {
         {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
         {loading ? "Analyse en cours..." : "Lancer l'analyse des emails"}
       </button>
-      {error && <p className="text-red-400 text-xs mt-2 font-medium bg-red-950/50 p-2 rounded-lg border border-red-900/50 max-w-xs text-right">{error}</p>}
+      {error && (
+        <div className="mt-2 text-right">
+          <p className="text-red-400 text-xs font-medium bg-red-950/50 p-2 rounded-lg border border-red-900/50 max-w-xs mb-2">
+            {error}
+          </p>
+          {(error.toLowerCase().includes("token") || error.toLowerCase().includes("expir") || error.toLowerCase().includes("timeout")) && (
+            <button 
+              onClick={() => router.push("/login")}
+              className="text-xs text-indigo-400 hover:text-indigo-300 underline"
+            >
+              Se reconnecter à la boîte mail
+            </button>
+          )}
+        </div>
+      )}
     </div>
   );
 }

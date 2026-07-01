@@ -5,7 +5,7 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft, FileText, CheckCircle, Mail, Phone, RefreshCw } from "lucide-react";
 import ScanButton from "@/components/ScanButton";
-import CandidateCard from "@/components/CandidateCard";
+import CandidateList from "@/components/CandidateList";
 import DeleteJobButton from "@/components/DeleteJobButton";
 
 export default async function JobPage({ params }: { params: Promise<{ id: string }> }) {
@@ -38,12 +38,21 @@ export default async function JobPage({ params }: { params: Promise<{ id: string
 
   return (
     <div className="space-y-8">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <Link href="/dashboard" className="inline-flex items-center gap-2 text-sm text-slate-400 hover:text-white transition-colors">
           <ArrowLeft className="h-4 w-4" />
           Retour au tableau de bord
         </Link>
-        <DeleteJobButton jobId={job.id} />
+        <div className="flex items-center gap-3">
+          <a 
+            href={`/api/job/${job.id}/export`}
+            download
+            className="flex items-center gap-2 rounded-lg bg-slate-800 hover:bg-slate-700 px-3 py-2 text-sm font-medium text-slate-200 transition-all border border-slate-700"
+          >
+            Exporter en CSV
+          </a>
+          <DeleteJobButton jobId={job.id} />
+        </div>
       </div>
 
       <div className="rounded-3xl border border-slate-800 bg-slate-900 p-6 sm:p-8">
@@ -98,11 +107,7 @@ export default async function JobPage({ params }: { params: Promise<{ id: string
           </p>
         </div>
       ) : (
-        <div className="grid gap-6">
-          {selectedCandidates.map((candidate) => (
-            <CandidateCard key={candidate.id} candidate={candidate} jobId={job.id} />
-          ))}
-        </div>
+        <CandidateList candidates={selectedCandidates} jobId={job.id} />
       )}
       
       {pendingOrRejected.length > 0 && (
