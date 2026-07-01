@@ -6,11 +6,13 @@ import Link from "next/link";
 import { ArrowLeft, FileText, CheckCircle, Mail, Phone, RefreshCw } from "lucide-react";
 import ScanButton from "@/components/ScanButton";
 import CandidateCard from "@/components/CandidateCard";
+import DeleteJobButton from "@/components/DeleteJobButton";
 
 export default async function JobPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const session = await getServerSession(authOptions);
-  if (!session) redirect("/");
+
+  if (!session) redirect("/login");
 
   const job = await prisma.job.findUnique({
     where: { 
@@ -36,10 +38,13 @@ export default async function JobPage({ params }: { params: Promise<{ id: string
 
   return (
     <div className="space-y-8">
-      <Link href="/dashboard" className="inline-flex items-center gap-2 text-sm text-slate-400 hover:text-white transition-colors">
-        <ArrowLeft className="h-4 w-4" />
-        Retour au tableau de bord
-      </Link>
+      <div className="flex items-center justify-between">
+        <Link href="/dashboard" className="inline-flex items-center gap-2 text-sm text-slate-400 hover:text-white transition-colors">
+          <ArrowLeft className="h-4 w-4" />
+          Retour au tableau de bord
+        </Link>
+        <DeleteJobButton jobId={job.id} />
+      </div>
 
       <div className="rounded-3xl border border-slate-800 bg-slate-900 p-6 sm:p-8">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-slate-800 pb-6">
