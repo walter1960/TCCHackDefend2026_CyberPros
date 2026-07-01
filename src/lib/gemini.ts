@@ -1,15 +1,15 @@
-import { GoogleGenerativeAI, Schema, Type } from "@google/generative-ai";
+import { GoogleGenerativeAI, Schema, SchemaType } from "@google/generative-ai";
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || "");
 
 const cvSchema: Schema = {
-  type: Type.OBJECT,
+  type: SchemaType.OBJECT,
   properties: {
-    name: { type: Type.STRING, description: "Nom du candidat s'il est trouvé, sinon chaîne vide" },
-    email: { type: Type.STRING, description: "Email du candidat s'il est trouvé, sinon chaîne vide" },
-    phone: { type: Type.STRING, description: "Téléphone du candidat s'il est trouvé, sinon chaîne vide" },
-    score: { type: Type.INTEGER, description: "Un entier entre 0 et 100 représentant la correspondance avec les critères" },
-    summary: { type: Type.STRING, description: "Un résumé (en français, max 3 phrases) expliquant concisément pourquoi ce score a été attribué (points forts et points faibles)." }
+    name: { type: SchemaType.STRING, description: "Nom du candidat s'il est trouvé, sinon chaîne vide" },
+    email: { type: SchemaType.STRING, description: "Email du candidat s'il est trouvé, sinon chaîne vide" },
+    phone: { type: SchemaType.STRING, description: "Téléphone du candidat s'il est trouvé, sinon chaîne vide" },
+    score: { type: SchemaType.INTEGER, description: "Un entier entre 0 et 100 représentant la correspondance avec les critères" },
+    summary: { type: SchemaType.STRING, description: "Un résumé (en français, max 3 phrases) expliquant concisément pourquoi ce score a été attribué (points forts et points faibles)." }
   },
   required: ["name", "email", "phone", "score", "summary"]
 };
@@ -88,21 +88,21 @@ ${cvText}`;
 }
 
 const interviewSchema: Schema = {
-  type: Type.OBJECT,
+  type: SchemaType.OBJECT,
   properties: {
     technicalQuestions: {
-      type: Type.ARRAY,
-      items: { type: Type.STRING },
+      type: SchemaType.ARRAY,
+      items: { type: SchemaType.STRING },
       description: "Liste de 3 à 5 questions techniques pertinentes au vu du CV et de l'offre."
     },
     behavioralQuestions: {
-      type: Type.ARRAY,
-      items: { type: Type.STRING },
+      type: SchemaType.ARRAY,
+      items: { type: SchemaType.STRING },
       description: "Liste de 2 à 3 questions comportementales ou situationnelles pertinentes."
     },
     weaknessesToProbe: {
-      type: Type.ARRAY,
-      items: { type: Type.STRING },
+      type: SchemaType.ARRAY,
+      items: { type: SchemaType.STRING },
       description: "Liste de points faibles ou zones d'ombre du CV à creuser pendant l'entretien."
     }
   },
