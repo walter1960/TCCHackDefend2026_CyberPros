@@ -16,6 +16,10 @@ export async function scanEmailsForJob(jobId: string, userId: string) {
   const job = await prisma.job.findUnique({ where: { id: jobId } });
   if (!job) throw new Error("Job not found");
 
+  if (job.status === "ARCHIVED" || (job.deadline && new Date(job.deadline) < new Date())) {
+    throw new Error("L'offre est clôturée. Le scan de nouveaux CVs n'est plus autorisé.");
+  }
+
   if (account.provider === "google") {
     const validToken = await getValidGoogleToken(account);
     await scanGmail(validToken, job);
@@ -84,47 +88,51 @@ async function scanGmail(accessToken: string, job: any) {
   const listData = await listRes.json();
   const messages = listData.messages || [];
 
-  for (const msg of messages) {
-    const msgRes = await fetch(`https://gmail.googleapis.com/gmail/v1/users/me/messages/${msg.id}`, {
-      headers: { Authorization: `Bearer ${accessToken}` }
-    });
-    const msgData = await msgRes.json();
-
-    const parts = msgData.payload?.parts || [];
-    let attachmentId = null;
-    let filename = "";
-
-    for (const part of parts) {
-      if (part.filename && part.filename.toLowerCase().endsWith(".pdf") && part.body?.attachmentId) {
-        attachmentId = part.body.attachmentId;
-        filename = part.filename;
-        break;
-      }
-    }
-
-    if (attachmentId) {
-      const attRes = await fetch(`https://gmail.googleapis.com/gmail/v1/users/me/messages/${msg.id}/attachments/${attachmentId}`, {
+  await Promise.all(messages.map(async (msg: any) => {
+    try {
+      const msgRes = await fetch(`https://gmail.googleapis.com/gmail/v1/users/me/messages/${msg.id}`, {
         headers: { Authorization: `Bearer ${accessToken}` }
       });
-      const attData = await attRes.json();
+      const msgData = await msgRes.json();
 
-      if (attData.data) {
-        const b64 = attData.data.replace(/-/g, '+').replace(/_/g, '/');
-        const buffer = Buffer.from(b64, 'base64');
-        await processPdfBuffer(buffer, filename, job);
+      const parts = msgData.payload?.parts || [];
+      let attachmentId = null;
+      let filename = "";
+
+      for (const part of parts) {
+        if (part.filename && part.filename.toLowerCase().endsWith(".pdf") && part.body?.attachmentId) {
+          attachmentId = part.body.attachmentId;
+          filename = part.filename;
+          break;
+        }
       }
+
+      if (attachmentId) {
+        const attRes = await fetch(`https://gmail.googleapis.com/gmail/v1/users/me/messages/${msg.id}/attachments/${attachmentId}`, {
+          headers: { Authorization: `Bearer ${accessToken}` }
+        });
+        const attData = await attRes.json();
+
+        if (attData.data) {
+          const b64 = attData.data.replace(/-/g, '+').replace(/_/g, '/');
+          const buffer = Buffer.from(b64, 'base64');
+          await processPdfBuffer(buffer, filename, job);
+        }
+      }
+      
+      // Mark as read
+      await fetch(`https://gmail.googleapis.com/gmail/v1/users/me/messages/${msg.id}/modify`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ removeLabelIds: ["UNREAD"] })
+      });
+    } catch (e) {
+      console.error(`Error processing msg ${msg.id}:`, e);
     }
-    
-    // Mark as read
-    await fetch(`https://gmail.googleapis.com/gmail/v1/users/me/messages/${msg.id}/modify`, {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${accessToken}`,
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({ removeLabelIds: ["UNREAD"] })
-    });
-  }
+  }));
 }
 
 async function scanOutlook(accessToken: string, job: any) {
@@ -141,22 +149,26 @@ async function scanOutlook(accessToken: string, job: any) {
   const listData = await listRes.json();
   const messages = listData.value || [];
 
-  for (const msg of messages) {
-    const attUrl = `https://graph.microsoft.com/v1.0/me/messages/${msg.id}/attachments`;
-    const attRes = await fetch(attUrl, {
-      headers: { Authorization: `Bearer ${accessToken}` }
-    });
-    const attData = await attRes.json();
-    const attachments = attData.value || [];
+  await Promise.all(messages.map(async (msg: any) => {
+    try {
+      const attUrl = `https://graph.microsoft.com/v1.0/me/messages/${msg.id}/attachments`;
+      const attRes = await fetch(attUrl, {
+        headers: { Authorization: `Bearer ${accessToken}` }
+      });
+      const attData = await attRes.json();
+      const attachments = attData.value || [];
 
-    for (const att of attachments) {
-      if (att.name && att.name.toLowerCase().endsWith(".pdf") && att.contentBytes) {
-        const buffer = Buffer.from(att.contentBytes, 'base64');
-        await processPdfBuffer(buffer, att.name, job);
-        break; 
+      for (const att of attachments) {
+        if (att.name && att.name.toLowerCase().endsWith(".pdf") && att.contentBytes) {
+          const buffer = Buffer.from(att.contentBytes, 'base64');
+          await processPdfBuffer(buffer, att.name, job);
+          break; 
+        }
       }
+    } catch (e) {
+      console.error(`Error processing outlook msg ${msg.id}:`, e);
     }
-  }
+  }));
 }
 
 async function processPdfBuffer(buffer: Buffer, filename: string, job: any) {

@@ -13,6 +13,7 @@ export default function NewJobPage() {
     description: "",
     criteria: "",
     targetCount: 5,
+    deadline: "",
   });
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -121,6 +122,22 @@ export default function NewJobPage() {
               className="w-full sm:w-48 bg-slate-950 border border-slate-700 rounded-xl px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
               value={formData.targetCount}
               onChange={(e) => setFormData({ ...formData, targetCount: parseInt(e.target.value) || 5 })}
+            />
+          </div>
+
+          <div>
+            <label htmlFor="deadline" className="block text-sm font-medium text-slate-300 mb-1">
+              Date limite de candidature (Validité)
+            </label>
+            <p className="text-xs text-slate-500 mb-2">
+              Passée cette date, l'offre sera archivée et le scanner ignorera les nouveaux CVs.
+            </p>
+            <input
+              type="date"
+              id="deadline"
+              className="w-full sm:w-48 bg-slate-950 border border-slate-700 rounded-xl px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
+              value={formData.deadline}
+              onChange={(e) => setFormData({ ...formData, deadline: e.target.value })}
             />
           </div>
         </div>

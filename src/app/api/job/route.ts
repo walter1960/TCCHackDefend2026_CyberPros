@@ -12,20 +12,26 @@ export async function POST(req: Request) {
 
     const userId = (session.user as any).id;
     const body = await req.json();
-    const { title, description, criteria, targetCount } = body;
+    const { title, description, criteria, targetCount, deadline } = body;
 
     if (!title || !criteria || !targetCount) {
       return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
     }
 
+    const jobData: any = {
+      title,
+      description,
+      criteria,
+      targetCount,
+      userId,
+    };
+
+    if (deadline) {
+      jobData.deadline = new Date(deadline);
+    }
+
     const job = await prisma.job.create({
-      data: {
-        title,
-        description,
-        criteria,
-        targetCount,
-        userId,
-      },
+      data: jobData,
     });
 
     return NextResponse.json(job);

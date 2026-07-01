@@ -60,6 +60,8 @@ model Job {
   description    String?
   criteria       String      
   targetCount    Int         
+  deadline       DateTime?
+  status         String      @default("ACTIVE")
   userId         String      
   createdAt      DateTime    @default(now())
   updatedAt      DateTime    @updatedAt
@@ -76,6 +78,7 @@ model Candidate {
   cvText         String?
   score          Int      @default(0) 
   summary        String?  
+  interviewGuide String?
   status         String   @default("PENDING") 
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
