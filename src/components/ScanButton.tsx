@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { RefreshCw, Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { signOut } from "next-auth/react";
 
 export default function ScanButton({ jobId }: { jobId: string }) {
   const [loading, setLoading] = useState(false);
@@ -47,9 +48,9 @@ export default function ScanButton({ jobId }: { jobId: string }) {
           <p className="text-red-400 text-xs font-medium bg-red-950/50 p-2 rounded-lg border border-red-900/50 max-w-xs mb-2">
             {error}
           </p>
-          {(error.toLowerCase().includes("token") || error.toLowerCase().includes("expir") || error.toLowerCase().includes("timeout")) && (
+          {(error.toLowerCase().includes("token") || error.toLowerCase().includes("expir") || error.toLowerCase().includes("timeout") || error.toLowerCase().includes("révoqué")) && (
             <button 
-              onClick={() => router.push("/login")}
+              onClick={() => signOut({ callbackUrl: "/" })}
               className="text-xs text-indigo-400 hover:text-indigo-300 underline"
             >
               Se reconnecter à la boîte mail
